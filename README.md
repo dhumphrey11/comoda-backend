@@ -1,123 +1,104 @@
 # Comoda Backend
 
-Backend services and API for the Comoda platform.
+FastAPI-based backend services and API for the Comoda platform.
 
 ## Overview
 
-This repository contains the backend services, API endpoints, and business logic for the Comoda application. Built with modern Python frameworks to provide scalable and maintainable server-side functionality.
+This repository contains the backend services, API endpoints, and business logic for the Comoda application. It uses FastAPI, SQLAlchemy, and PostgreSQL for transactional data, plus Google BigQuery for analytics.
 
 ## Tech Stack
 
-- **Framework**: FastAPI / Django / Flask (to be determined)
-- **Database**: PostgreSQL / MongoDB (to be determined)
-- **Authentication**: JWT / OAuth2
-- **API Documentation**: OpenAPI/Swagger
-- **Testing**: pytest
-- **Containerization**: Docker
+- Framework: FastAPI
+- Database: PostgreSQL (SQLAlchemy + psycopg v3)
+- Async HTTP: httpx
+- Logging: Structured JSON logs
+- Analytics: Google BigQuery
+- Runtime: Uvicorn
+- Containerization: Docker / Cloud Run
 
-## Project Structure
+## Layout
 
-```
-backend/
-├── app/                    # Main application code
-├── tests/                  # Test suite
-├── config/                 # Configuration files
-├── migrations/             # Database migrations
-├── requirements.txt        # Python dependencies
-├── Dockerfile             # Docker configuration
-├── docker-compose.yml     # Local development setup
-└── README.md              # This file
-```
+Key files and folders:
+
+- `main.py` — FastAPI app entrypoint
+- `routers/` — API route modules (ingest, signals, trades, admin)
+- `services/` — External API, ML, trading, and BigQuery clients
+- `utils/` — Logging, DB helpers, rate-limiters
+- `models/` — Pydantic schemas
+- `requirements.txt` — Python dependencies
+- `Dockerfile` — Container image build
+- `cloudbuild.yaml` — Build/deploy to Cloud Run
+- `docker-compose.yml` — Local Postgres for development
 
 ## Getting Started
 
 ### Prerequisites
 
-- Python 3.9+
-- pip or pipenv
-- Docker (optional)
+- Python 3.11+
+- Docker (optional but recommended for local DB)
 
-### Local Development Setup
+### Local Database (optional but recommended)
 
-1. Clone the repository:
-   ```bash
-   git clone <repository-url>
-   cd backend
-   ```
+Start a local Postgres using Docker Compose:
 
-2. Create a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+```bash
+docker compose up -d postgres
+```
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+This exposes Postgres on `localhost:5432` with user/password `postgres` and database `comoda`.
 
-4. Set up environment variables:
-   ```bash
-   cp .env.example .env
-   # Edit .env with your configuration
-   ```
+### Local App Setup
 
-5. Run the application:
-   ```bash
-   python main.py
-   ```
+1) Create a virtual environment and install deps
 
-### Docker Setup
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
 
-1. Build and run with Docker Compose:
-   ```bash
-   docker-compose up --build
-   ```
+2) Configure env vars
 
-## API Documentation
+```bash
+cp .env.example .env
+# If using local Postgres via compose, set:
+# DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/comoda
+```
 
-Once running, access the API documentation at:
-- Swagger UI: `http://localhost:8000/docs`
-- ReDoc: `http://localhost:8000/redoc`
+3) Run the API
+
+```bash
+uvicorn main:app --reload --port 8000
+```
+
+### API Docs
+
+- Swagger UI: http://localhost:8000/docs
+- ReDoc: http://localhost:8000/redoc
 
 ## Environment Variables
 
-Key environment variables (see `.env.example`):
+See `.env.example`. Notable variables:
 
-- `DATABASE_URL`: Database connection string
-- `SECRET_KEY`: JWT secret key
-- `DEBUG`: Enable debug mode (development only)
-- `GCP_SERVICE_ACCOUNT_KEY`: GCP service account credentials
-- `CRYPTO_API_KEY`: Cryptocurrency API key
+- `DATABASE_URL`: Postgres URL (use `postgresql+psycopg://...`)
+- `COINAPI_KEY`, `SANTIMENT_API_KEY`: External data provider keys
+- `ML_SERVICE_BASE`: Base URL for ML service
+- `GCP_PROJECT_ID`, `BQ_DATASET`: BigQuery config
+
+## Docker/Cloud Run
+
+The included `Dockerfile` builds the API image. `cloudbuild.yaml` contains a sample Cloud Build pipeline to build, push, and deploy to Cloud Run using Artifact Registry. Ensure the required secrets and roles are configured (see infra repo).
 
 ## Testing
 
-Run the test suite:
+Pytest scaffolding not yet added. Recommended next steps:
 
-```bash
-pytest
-```
-
-Run with coverage:
-
-```bash
-pytest --cov=app tests/
-```
-
-## Deployment
-
-Deployment instructions will be added as the infrastructure is set up.
+- Add unit tests for routers and services
+- Add an integration test that boots the app and hits `/health`
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature-name`
-3. Make your changes and add tests
-4. Run the test suite: `pytest`
-5. Commit your changes: `git commit -am 'Add feature'`
-6. Push to the branch: `git push origin feature-name`
-7. Create a Pull Request
-
-## License
-
-[License information to be added]
+1. Create a feature branch: `git checkout -b feature/name`
+2. Make your changes and add tests
+3. Run the app and tests locally
+4. Submit a PR
